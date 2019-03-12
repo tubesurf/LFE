@@ -25,9 +25,9 @@ When dealing with a live system a method that can be used to identify LD_PRELOAD
 
 2. Then undertake the same requests again for the same  function using dlsym again but with the RTLD_NEXT flag set. With the RTLD_NEXT flag set it lets the dynamic loader to skip the first library (which could be the hooking library) in which the symbol is found and then look for it in the other loaded libraries. 
 
-3. Using the response from dlsym and dlsym iwth RTLD_NEXT set it is possible to compare the two results and determines whether a mismatch exists i.e. potentially a hooked function.
+3. Using the response from dlsym and dlsym with RTLD_NEXT set it is possible to compare the two results and determine whether a mismatch exists i.e. potentially a hooked function.
 
-The detection method described above is interesting as it relies on the dynamic linker to determine inconsistenciedds, and thus a live system to undertake the analysis. However if we take the case where a memory dump has been acquired is it possible to determine if a maliscous library is hooking functions with volatility?
+The detection method described above is interesting as it relies on the dynamic linker to determine inconsistency, and thus a live system to undertake the analysis. However if we take the case where a memory dump has been acquired is it possible to determine if a malicious library is hooking functions with volatility?
 
 From the book "The Art of Memory Forensics" the authors suggest that Using the Volatility library listing and symbol resolution API it would be possible to develop a plugin that could identify libraries exporting the same symbol. 
 
@@ -44,8 +44,8 @@ If you are trying to follow along the following details may assist you:
 
 ### Memory dump <a name=memdump/>
 
-A memory dump is a extraction of the data currently held in RAM, it is quiet difficult to gather the data in RAM for a specific point in time as the act of extracting the data could cuase changes and also the time it takes the data could be paged out or into RAM. There are a number of tools that can be used for extracting data from RAM to undertake anylsis and in a paper at (https://ro.ecu.edu.au/adf/144/) Andri, Craig, and Peter undertake a compairion of three such tools Live Respose, LiME, and Mem Tool.
-For this project a memory dump was undertaken using Lime the following steps where taken to achive the memory dump of the Ubuntu virtual machine:
+A memory dump is a extraction of the data currently held in RAM, it is quiet difficult to gather the data in RAM for a specific point in time as the act of extracting the data could cause changes and also the time it takes the data could be paged out or into RAM. There are a number of tools that can be used for extracting data from RAM to undertake analysis and in a paper at (https://ro.ecu.edu.au/adf/144/) Andri, Craig, and Peter undertake a comparison of three such tools Live Response, LiME, and Mem Tool.
+For this project a memory dump was undertaken using Lime the following steps where taken to achieve the memory dump of the Ubuntu virtual machine:
 
 ```
 $git clone https://github.com/504ensicsLabs/LiME.git
@@ -60,7 +60,7 @@ If you are dumping memory across a socket ensure that either a firewall rule is 
 
 ### Volatility <a name=vol/>
 
-Volatility provides an open source framework for the analysis of extracted artefacts from memory for Linux, Windows, and Mac OSX. 
+Volatility provides an open source framework for the analysis of extracted artifacts from memory for Linux, Windows, and Mac OSX. 
 
 To get volatility working for Ubuntu 16.04 undertake the following
 
@@ -69,7 +69,7 @@ git clone https://github.com/volatilityfoundation/volatility.git
 pip install pycrypto Distorm3 OpenPyxl ujso
 ```
 
-Hopefully it is possible to obtain the kernel version for the RAM dump undertaken of the host under investigation as this will be required for volatility to find critical data structures. If you do know the Linux kernel verison but there isn't a profile avaliable then you will need to create one (this is most likley for Linux hosts), to build a profile undertake the following:
+Hopefully it is possible to obtain the kernel version for the RAM dump undertaken of the host under investigation as this will be required for volatility to find critical data structures. If you do know the Linux kernel version but there isn't a profile avaliable then you will need to create one (this is most likely for Linux hosts), to build a profile undertake the following:
 ```
 apt-get install libelf-dev
 make -C /lib/modules/$(uname -r)/build CONFIG_DEBUG_INFO=y M=$PWD modules
@@ -77,20 +77,20 @@ dwarfdump -di ./module.o > module.dwarf
 zip debian0415039.zip module.dwarf /boot/System.map-$(uname -r)
 ```
 
-Now that you know the profile or have been able to generate a profile you can run a number of plugins against the data and start your anaylsis, voliatity have a helpful command reference at https://github.com/volatilityfoundation/volatility/wiki/Command-Reference. The following just providles a example of running the linux_banner plugin:
+Now that you know the profile or have been able to generate a profile you can run a number of plugins against the data and start your analysis, volatility have a helpful command reference at https://github.com/volatilityfoundation/volatility/wiki/Command-Reference. The following just provides a example of running the linux_banner plugin:
 ```
 python ./vol.py --profile=Linuxdebian0415039x64 -f ../dump.mem linux_banner
 Volatility Foundation Volatility Framework 2.6.1
 Linux version 4.15.0-39-generic (buildd@lcy01-amd64-012) (gcc version 5.4.0 20160609 (Ubuntu 5.4.0-6ubuntu1~16.04.10)) #42~16.04.1-Ubuntu SMP Wed Oct 24 17:09:54 UTC 2018 (Ubuntu 4.15.0-39.42~16.04.1-generic 4.15.18)
 ```
 
-## Plugin walkthrough<a name=code/>
+## Plugin walk-through<a name=code/>
 
-The following section is a walkthrough of the plugin created to determine if a process had more than one library exporting the same symobol.
+The following section is a walk-through of the plugin created to determine if a process had more than one library exporting the same symbol.
 
-As discussed earlier the main parts of plugin are for a process undertake the following:
+As discussed earlier the main parts of the plugin are for a process undertake the following:
 * determine the libraries mapped into the address space
-* for the address space that is marked read and execuatable check if the liabry was paged into memory at the time
+* for the address space that is marked read and execuatable check if the library was paged into memory at the time
 * thus check for a valid elf header
 * if the elf header is valid then extract out all the valid symbols of the library
 * store the symbols associated with that library and repeat for each library
@@ -239,7 +239,7 @@ As described in the above sections the run from above shows in the first section
 
 The next section shows for each symbol the exported libraries if there is more than two, note that in this case there are over 1903 conflicts.
 
-If you have the file on disk then you could use readelf to also check if the libraries are exporting the same symbol, this may not be a maliscious act though. The example below shows how readelf was used to confirm the plugin was working:
+If you have the file on disk then you could use readelf to also check if the libraries are exporting the same symbol, this may not be a malicious act though. The example below shows how readelf was used to confirm the plugin was working:
 
 ```
 $ readelf -Ws /usr/lib/x86_64-linux-gnu/libgtk-3.so.0.1800.9 | grep g_ptr_array_set_size
@@ -253,18 +253,18 @@ This seems pretty strange but the following section provides some insight into w
 
 ## Shared library issues
 
-The paper by Ulrich Drepper "How To Write Shared Libraries" (https://akkadia.org/drepper/dsohowto.pdf) provides great detail on how a ELF shared library is loaded into memory. For a shared libary to be loaded to be used by a program the kernel requires the dynamic linker:
+The paper by Ulrich Drepper "How To Write Shared Libraries" (https://akkadia.org/drepper/dsohowto.pdf) provides great detail on how a ELF shared library is loaded into memory. For a shared library to be loaded to be used by a program the kernel requires the dynamic linker:
 * to determine and load dependencies, 
 * relocate the application and all dependencies, and
 * initalize the application and dependencies in the correct order.
 
-As part of the relocaiton process the dynamic linker has to perform a relocation for all symbols that are going to be used at run-time that aren't know at link-time. From the paper it states that "Note that there is no problem if the scope contains more than one definition of the same symbol. The symbol lookup algorithm simply picks up the first definition it findes". Thus from what we have seen from the example is expected then in the case of the linker it will jsut take the first library that resolves the symbol. Thus if a attacker is using the LD_PRELOAD method there symbol will load first! If not then its could just be a matter of the name of the library getting loaded first and thus having its symbols used.
+As part of the relocation process the dynamic linker has to perform a relocation for all symbols that are going to be used at run-time that aren't know at link-time. From the paper it states that "Note that there is no problem if the scope contains more than one definition of the same symbol. The symbol lookup algorithm simply picks up the first definition it finds". Thus from what we have seen from the example is expected then in the case of the linker it will jsut take the first library that resolves the symbol. Thus if a attacker is using the LD_PRELOAD method there symbol will load first! If not then its could just be a matter of the name of the library getting loaded first and thus having its symbols used.
 
-A blog by Michael (https://holtstrom.com/michael/blog/post/437/Shared-Library-Symbol-Conflicts-%28on-Linux%29.html) provides a pratical example of where this can happen due to poor programming. So when looking for libraries that are resolving the same symbols we should confirm if the intent is malicious.
+A blog by Michael (https://holtstrom.com/michael/blog/post/437/Shared-Library-Symbol-Conflicts-%28on-Linux%29.html) provides a practical example of where this can happen due to poor programming. So when looking for libraries that are resolving the same symbols we should confirm if the intent is malicious.
 
 ## Contribution 
 
-This blog post has been created for completing the requirments of the SecurityTube Linux Forensics Expert certification:http://www.securitytube-training.com/online-courses/linux-forensics/ as student ID SLE-2150. Undertaking the Linux Forensics Course it was possible to gain a stronger understanding of the forensics process involved with Linux systems and also appreciate the diffrence between memory anaylsis and more traditional forms of forensics.
+This blog post has been created for completing the requirements of the SecurityTube Linux Forensics Expert certification:http://www.securitytube-training.com/online-courses/linux-forensics/ as student ID SLE-2150. Undertaking the Linux Forensics Course it was possible to gain a stronger understanding of the forensics process involved with Linux systems and also appreciate the difference between memory analysis and more traditional forms of forensics.
 
 
 
